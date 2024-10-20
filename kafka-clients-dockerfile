@@ -1,0 +1,52 @@
+# use an official Ubuntu base image
+FROM ubuntu:20.04
+
+# set environment variables to non-interactive (avoid prompts)
+ENV DEBIAN_FRONTEND=noninteractive
+
+# update package list and install packages
+RUN apt-get update && \
+    apt-get install -y \
+    kafkacat \
+    openssh-client \
+    python2 \
+    python3 \
+    python3-pip \
+    openjdk-11-jdk \
+    locales \
+    gnuplot \
+    curl
+
+# create a symbolic link
+RUN ln -s /usr/bin/python3 /usr/bin/python
+
+# install kafka-python for python3
+RUN pip3 install kafka-python
+
+# install numpy for python2, then install numpy
+RUN curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py && \
+    python2 get-pip.py && \
+    pip install numpy
+
+# create the /ubuntu directory
+RUN mkdir -p /ubuntu && \
+    chmod 700 /ubuntu
+
+# copy files and directory from the host to the container
+COPY newkey /home/ubuntu/newkey
+COPY newkey.pub /home/ubuntu/newkey.pub
+COPY kafka-hdd /home/ubuntu/kafka-hdd
+
+# set permissions (if needed)
+RUN chmod 600 /home/ubuntu/newkey /home/ubuntu/newkey.pub
+
+# set permissions for kafka-hdd directory and its contents
+RUN chmod -R u+rwx /home/ubuntu/kafka-hdd
+
+# set up SSH configuration to bypass host key checking
+RUN mkdir -p /root/.ssh && \
+    echo "StrictHostKeyChecking no" > /root/.ssh/config && \
+    echo "UserKnownHostsFile /dev/null" >> /root/.ssh/config
+
+# set the default command
+CMD ["sleep", "infinity"]
